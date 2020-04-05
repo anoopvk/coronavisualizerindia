@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>corona track</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+</head>
+
+<body>
+    <div class="container">
+        <div class="card " style="width: 720px;margin: 20px auto;">
+            <div class="row py-3 text-center">
+                <div class="col">
+                    <label for="stateselect">select state</label>
+                    <select name="states" id="stateselect" onchange="createchart(this.value)">
+                    </select>
+                </div>
+
+            </div>
+
+            <div class=" custum-control custom-checkbox">
+                <div class="row pb-3 pl-5">
+                    <div class="col-3">
+                        <input class="custom-control-input" type="checkbox" name="a" id="a" checked="true"
+                            onclick="createchart(stateselect)">
+                        <label class="custom-control-label ml-1" for="a">active</label>
+                    </div>
+                    <div class="col-3">
+                        <input class="custom-control-input" type="checkbox" name="tc" id="tc" checked="true"
+                            onclick="createchart(stateselect)">
+                        <label class="custom-control-label ml-1" for="tc">Total Cases</label>
+                    </div>
+
+                    <div class="col-3">
+                        <input class="custom-control-input" type="checkbox" name="c" id="c" checked="true"
+                            onclick="createchart(stateselect)">
+                        <label class="custom-control-label ml-1" for="c">Daily New</label>
+                    </div>
+
+                    <div class="col-3">
+                        <input class="custom-control-input" type="checkbox" name="tr" id="tr" checked="true"
+                            onclick="createchart(stateselect)">
+                        <label class="custom-control-label ml-1" for="tr">Total Recovered</label>
+                    </div>
+                    <div class="col-3">
+                        <input class="custom-control-input" type="checkbox" name="r" id="r" checked="true"
+                            onclick="createchart(stateselect)">
+                        <label class="custom-control-label ml-1" for="r">Recovered</label>
+                    </div>
+                    <!-- </div>
+                <div class="row pb-3 pl-5"> -->
+                    <div class="col-3">
+                        <input class="custom-control-input" type="checkbox" name="td" id="td" checked="true"
+                            onclick="createchart(stateselect)">
+                        <label class="custom-control-label ml-1" for="td">Total Deaths</label>
+                    </div>
+                    <div class="col-3">
+                        <input class="custom-control-input" type="checkbox" name="d" id="d" checked="true"
+                            onclick="createchart(stateselect)">
+                        <label class="custom-control-label ml-1" for="d">Daily Deaths</label>
+                    </div>
+
+                </div>
+            </div>
+            <div id="chartdiv">
+                <canvas id="chart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        mainn();
+        var flag = false;
+        var myChart;
+        async function mainn() {
+            statelist = await getstatedatajson();
+
+
+            // document.getElementById('a').nodeValue
+
+
+            //create dropdown
+            statename = {
+                "an": "ANDAMAN AND NICOBAR ISLANDS",
+                "ap": "ANDHRA PRADESH",
+                "ar": "ARUNACHAL PRADESH",
+                "as": "ASSAM",
+                "br": "BIHAR",
+                "ch": "CHANDIGARH",
+                "ct": "CHHATTISGARH",
+                "dd": "DAMAN AND DIU",
+                "dl": "DELHI",
+                "dn": "DADRA AND NAGAR HAVELI",
+                "ga": "GOA",
+                "gj": "GUJARAT",
+                "hp": "HIMACHAL PRADESH",
+                "hr": "HARYANA",
+                "jh": "JHARKAND",
+                "jk": "JAMMU AND KASHMIR",
+                "ka": "KARNATAKA",
+                "kl": "KERALA",
+                "la": "LADAKH",
+                "ld": "LAKSHADWEEP",
+                "mh": "MAHARASHTRA",
+                "ml": "MEGHALAYA",
+                "mn": "MANIPUR",
+                "mp": "MADHYA PRADESH",
+                "mz": "MIZORAM",
+                "nl": "NAGALAND",
+                "or": "ODISHA",
+                "pb": "PUJAB",
+                "py": "PUDUCHERRY",
+                "rj": "RAJASTHAN",
+                "sk": "SIKKIM",
+                "tg": "TELANGANA",
+                "tn": "TAMIL NADU",
+                "tr": "TRIPURA",
+                "tt": "TOTAL COUNT IN INDIA",
+                "up": "UTTAR PRADESH",
+                "ut": "UTTARAKHAND",
+                "wb": "WEST BENGAL"
+            }
+
+            for (let i = 0; i < statelist.length; i++) {
+                var x = document.createElement("OPTION");
+                x.setAttribute("value", statelist[i]);
+
+                var t = document.createTextNode(statename[statelist[i]]);
+                x.appendChild(t);
+
+                if (statelist[i] == "tt") {
+                    x.setAttribute("selected", "selected");
+                }
+                document.getElementById("stateselect").appendChild(x);
+            }
+
+            stateselect = document.getElementById('stateselect').value;
+            console.log(stateselect);
+
+
+
+
+
+
+            createchart(stateselect);
+        }
+
+
+
+
+
+        async function createchart(stateselect) {
+            if (flag) {
+                myChart.destroy();
+                console.log("DESTROYED");
+            }
+            const datafromjson = await getdatajson(stateselect);
+            var totalconfirmed = [];
+            var totalrecovered = [];
+            var totaldeceased = [];
+            var active = [];
+
+            confirmed = datafromjson.confirmed;
+            recovered = datafromjson.recovered;
+            deceased = datafromjson.deceased;
+            statelist = datafromjson.statelist;
+            date = datafromjson.date;
+            //calculate total count
+            for (i = 0; i < confirmed.length; i++) {
+                //totalconfrmed
+                if (i == 0) {
+                    totalconfirmed[i] = parseFloat(confirmed[i]);
+                }
+                else {
+                    totalconfirmed[i] = totalconfirmed[i - 1] + parseFloat(confirmed[i]);
+                }
+                //total recovered
+                if (i == 0) {
+                    totalrecovered[i] = parseFloat(recovered[i]);
+                }
+                else {
+                    totalrecovered[i] = totalrecovered[i - 1] + parseFloat(recovered[i]);
+                }
+                //total deceased
+                if (i == 0) {
+                    totaldeceased[i] = parseFloat(deceased[i]);
+                }
+                else {
+                    totaldeceased[i] = totaldeceased[i - 1] + parseFloat(deceased[i]);
+                }
+                active[i] = totalconfirmed[i] - totalrecovered[i] - totaldeceased[i];
+
+
+            }
+            console.log(totaldeceased);
+
+            datatograph = []
+            tc = document.getElementById('tc');
+            c = document.getElementById('c');
+            r = document.getElementById('r');
+            d = document.getElementById('d');
+            a = document.getElementById('a');
+            if (a.checked == true) {
+                datatograph.push({
+                    label: 'Active',
+                    data: active,
+                    backgroundColor: 'rgba(66, 138, 245, 0.2)',
+                    borderColor: 'rgba(66, 138, 245, 1)',
+                    borderWidth: 1
+                });
+            }
+            if (tc.checked == true) {
+                datatograph.push({
+                    label: 'Total Cases',
+                    data: totalconfirmed,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                });
+            }
+
+            if (c.checked == true) {
+                datatograph.push({
+                    label: 'Daily New',
+                    data: confirmed,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                });
+            }
+            if (r.checked == true) {
+                datatograph.push({
+                    label: 'Total Recovered',
+                    data: totalrecovered,
+                    backgroundColor: 'rgba(0, 255, 0, 0.2)',
+                    borderColor: 'rgba(0, 255, 0, 1)',
+                    borderWidth: 1
+                });
+            }
+            if (r.checked == true) {
+                datatograph.push({
+                    label: 'Daily Recovered',
+                    data: recovered,
+                    backgroundColor: 'rgba(0, 255, 0, 0.2)',
+                    borderColor: 'rgba(0, 255, 0, 1)',
+                    borderWidth: 1
+                });
+            }
+            if (d.checked == true) {
+                datatograph.push({
+                    label: 'Total Deaths',
+                    data: totaldeceased,
+                    backgroundColor: 'rgba(100, 100, 100, 0.2)',
+                    borderColor: 'rgba(100, 100, 100, 1)',
+                    borderWidth: 1
+                });
+            }
+            if (d.checked == true) {
+                datatograph.push({
+                    label: 'Daily Deaths',
+                    data: deceased,
+                    backgroundColor: 'rgba(100, 100, 100, 0.2)',
+                    borderColor: 'rgba(100, 100, 100, 1)',
+                    borderWidth: 1
+                });
+            }
+
+
+
+            var ctx = document.getElementById('chart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: date,
+                    datasets: datatograph
+                },
+                options: {
+                    scales: {
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true
+                            }
+                        }]
+                    }
+                }
+            });
+
+            flag = true;
+
+
+        }
+
+
+
+
+
+
+
+
+
+        async function getstatedatajson() {
+            const table = await fetch('https://api.covid19india.org/states_daily.json');
+            const data = await table.json();
+            var statelist = [];
+
+            i = 0;
+            for (var key in data.states_daily[0]) {
+                if (key != "date" && key != "status") {
+                    statelist[i] = key;
+                    i++;
+                }
+                // console.log(statelist);
+
+            }
+            return statelist;
+        }
+
+
+
+
+        // getdatajson();
+
+        async function getdatajson(stateselect) {
+            const table = await fetch('https://api.covid19india.org/states_daily.json');
+            const data = await table.json();
+            // console.log(data.states_daily[0][stateselect]);
+            var confirmed = [];
+            var totalconfirmed = [];
+            var recovered = [];
+            var deceased = [];
+            var date = [];
+
+
+
+            j = 0;
+            for (i = 0; i < data.states_daily.length; i++) {
+                if (data.states_daily[i].status == "Confirmed") {
+                    confirmed[j] = data.states_daily[i][stateselect];
+                    date[j] = data.states_daily[i].date;
+                    j++;
+
+                }
+            }
+
+
+            j = 0;
+            for (i = 0; i < data.states_daily.length; i++) {
+                if (data.states_daily[i].status == "Recovered") {
+                    recovered[j] = data.states_daily[i][stateselect];
+                    // date[j] = data.states_daily[i].date;
+                    j++;
+                }
+            }
+
+
+            j = 0;
+            for (i = 0; i < data.states_daily.length; i++) {
+                if (data.states_daily[i].status == "Deceased") {
+                    deceased[j] = data.states_daily[i][stateselect];
+                    // date[j] = data.states_daily[i].date;
+                    j++;
+                }
+            }
+
+            // console.log(recovered);
+            return { confirmed, recovered, deceased, date };
+        }
+
+    </script>
+
+
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
+
+</body>
+
+</html>
